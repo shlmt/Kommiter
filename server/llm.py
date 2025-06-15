@@ -1,5 +1,7 @@
 from langchain_groq.chat_models import ChatGroq
 from langchain.prompts import ChatPromptTemplate
+import re
+import emoji
 
 code_template = ChatPromptTemplate.from_messages(
     [
@@ -18,7 +20,7 @@ code_template = ChatPromptTemplate.from_messages(
             "Generate new 4 commit messages for the branch '{branch_name}', that are not duplicates of the previous suggestions: {last_suggests}, "
             "with the following last commits history (if exist):\n{history}\n"
             "Separate them with new lines. Don't add any extra text.\n"
-            "For the following code changes:\n{diff}\n",
+            "For the following code changes, detect the 1-2 main changes:\n{diff}\n",
         ),
     ]
 )
@@ -30,8 +32,8 @@ commit_conventions = {
         "Keep subject concise and under 50 characters."
     ),
     "Gitmoji": (
-        "Start the commit message with an emoji representing the change type, "
-        "followed by a concise subject line in imperative mood. "
+        "Start the commit message with an emoji code alias representing the change type, "
+        "followed by a concise subject line in imperative mood. (e.g ':sparkles: add new feature'). "
     ),
     "JIRA-style": (
         "Prefix the commit message with the issue ID (e.g., 'PROJ-123'), followed by "
@@ -42,6 +44,20 @@ commit_conventions = {
         "followed by a colon and a concise imperative subject. Example: 'api: add rate limiting'."
     ),
 }
+
+
+def process_emoji_message(message):
+    match = re.match(r"^(:[\w+-]+:)(.*)$", message)
+    if not match:
+        return message
+    code, rest = match.groups()
+    emoji_char = emoji.emojize(code, language="alias")
+    if emoji_char != code:
+        return f"{code}{emoji_char}{rest}"
+    else:
+        print(code)
+        print(emoji.emojize(code))
+        return rest
 
 
 def generate_code(
@@ -68,6 +84,8 @@ def generate_code(
         max_tokens=1024,
     )
     response = llm.invoke(prompt)
+    if convention == "Gitmoji":
+        return "\n".join(map(process_emoji_message, response.content.split('\n'))) if response else ""
     return response.content if response else ""
 
 
