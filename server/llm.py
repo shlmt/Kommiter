@@ -78,7 +78,7 @@ def generate_code(
         last_suggests=last_suggest,
     )
     llm = ChatGroq(
-        model="meta-llama/llama-4-scout-17b-16e-instruct",
+        model="qwen/qwen3.6-27b",
         api_key=api_key,
         temperature=0.6,
         max_tokens=1024,
