@@ -3,3 +3,4 @@ langchain
 langchain-groq
 emoji
 gunicorn
+flask
